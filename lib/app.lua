@@ -185,8 +185,8 @@ end
 --- @param system fun(world: World)
 --- @param qualifier 'once' | 'always' | 'every' | 'when'
 --- @param cond_or_interval_or_event ((fun(world: World): boolean) | number | string)?
---- @param cond_or_nil (fun(world: World): boolean)?
-function App:add_system(system, qualifier, cond_or_interval_or_event, cond_or_nil)
+--- @param ... (fun(world: World): boolean)?
+function App:add_system(system, qualifier, cond_or_interval_or_event, ...)
   if qualifier == 'when' then
     assert(cond_or_interval_or_event, 'No event specified.')
   elseif qualifier == 'every' then
@@ -198,7 +198,7 @@ function App:add_system(system, qualifier, cond_or_interval_or_event, cond_or_ni
   assert(Array('once', 'always', 'every', 'when'):find(qualifier) ~= -1, 'Invalid qualifier ' .. qualifier)
 
   table.insert(self.systems, system)
-  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event, cond_or_nil })
+  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event, { ... } })
   return self
 end
 
@@ -231,9 +231,17 @@ function App:run()
     dispatch_table[ev_name]:insert({ ev_func, cond })
   end
 
-  local function execute_system(system, cond, ...)
-    if cond then
-      if cond(world) then
+  local function execute_system(system, cond_list, ...)
+    local len = #cond_list
+    if len > 0 then
+      local can_execute = true
+      for i = 1, len do
+        if not cond_list[i](world) then
+          can_execute = false
+          break
+        end
+      end
+      if can_execute then
         system(world, ...)
       end
     else
