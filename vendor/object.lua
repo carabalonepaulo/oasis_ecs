@@ -8,10 +8,11 @@
 --
 
 
+--- @class Object
 local Object = {}
 Object.__index = Object
 
-
+--- @private
 function Object:new(...)
 end
 
@@ -38,6 +39,8 @@ function Object:implement(...)
   end
 end
 
+--- @generic T : Object
+--- @param T T
 function Object:is(T)
   local mt = getmetatable(self)
   while mt do
