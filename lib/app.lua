@@ -231,13 +231,13 @@ function App:run()
     dispatch_table[ev_name]:insert({ ev_func, cond })
   end
 
-  local function execute_system(meta)
-    if meta[3] then
-      if meta[3](world) then
-        meta[1](world)
+  local function execute_system(system, cond, ...)
+    if cond then
+      if cond(world) then
+        system(world, ...)
       end
     else
-      meta[1](world)
+      system(world, ...)
     end
   end
 
@@ -246,25 +246,24 @@ function App:run()
   local always = self.qualified.always
   local always_len = #always
 
+  local meta
+
   for i = 1, once_len do
-    execute_system(rawget(once, i))
+    meta = rawget(once, i)
+    execute_system(meta[1], meta[3])
   end
+
   while not world.should_quit do
     for i = 1, always_len do
-      execute_system(rawget(always, i))
+      meta = rawget(always, i)
+      execute_system(meta[1], meta[3])
     end
 
     for event_data in world.events:iter() do
       local callbacks = dispatch_table[event_data[1]]
       if callbacks then
         for i = 1, #callbacks do
-          if callbacks[i][2] then
-            if callbacks[i][2](world) then
-              callbacks[i][1](world, unpack(event_data[2]))
-            end
-          else
-            callbacks[i][1](world, unpack(event_data[2]))
-          end
+          execute_system(callbacks[i][1], callbacks[i][2], unpack(event_data[2]))
         end
       end
     end
