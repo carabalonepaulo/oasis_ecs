@@ -184,20 +184,21 @@ end
 
 --- @param system fun(world: World)
 --- @param qualifier 'once' | 'always' | 'every' | 'when'
---- @param cond_or_interval_or_event (fun(world: World) | number | string)?
-function App:add_system(system, qualifier, cond_or_interval_or_event)
+--- @param cond_or_interval_or_event ((fun(world: World): boolean) | number | string)?
+--- @param cond_or_nil (fun(world: World): boolean)?
+function App:add_system(system, qualifier, cond_or_interval_or_event, cond_or_nil)
   if qualifier == 'when' then
     assert(cond_or_interval_or_event, 'No event specified.')
-  end
-
-  if qualifier == 'every' then
+  elseif qualifier == 'every' then
     assert(cond_or_interval_or_event, 'No interval specified.')
+    -- else -- once, always
+    --   cond_or_nil = cond_or_interval_or_event
   end
 
   assert(Array('once', 'always', 'every', 'when'):find(qualifier) ~= -1, 'Invalid qualifier ' .. qualifier)
 
   table.insert(self.systems, system)
-  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event })
+  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event, cond_or_nil })
   return self
 end
 
@@ -222,16 +223,17 @@ function App:run()
   for i = 1, when_len do
     local ev_func = when[i][1]
     local ev_name = when[i][2]
+    local cond = when[i][3]
 
     if not dispatch_table[ev_name] then
       dispatch_table[ev_name] = Array()
     end
-    dispatch_table[ev_name]:insert(ev_func)
+    dispatch_table[ev_name]:insert({ ev_func, cond })
   end
 
   local function execute_system(meta)
-    if #meta == 2 then
-      if meta[2](world) then
+    if meta[3] then
+      if meta[3](world) then
         meta[1](world)
       end
     else
@@ -256,7 +258,13 @@ function App:run()
       local callbacks = dispatch_table[event_data[1]]
       if callbacks then
         for i = 1, #callbacks do
-          callbacks[i](world, unpack(event_data[2]))
+          if callbacks[i][2] then
+            if callbacks[i][2](world) then
+              callbacks[i][1](world, unpack(event_data[2]))
+            end
+          else
+            callbacks[i][1](world, unpack(event_data[2]))
+          end
         end
       end
     end
