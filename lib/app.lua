@@ -1,8 +1,7 @@
 local Object = require 'vendor.object'
 local Array = require 'lib.array'
 local Slab = require 'lib.slab'
-local Uid = require 'lib.uid'
-local printf = function(...) print(string.format(...)) end
+local Queue = require 'lib.queue'
 
 ---
 
@@ -26,7 +25,7 @@ function Registry.create_component()
   --- @overload fun(...): { [1]: integer, [2]: any }
   local ctor = setmetatable({ component_id }, {
     __call = function(_, value)
-      return { component_id, value }
+      return { component_id, value or 1 }
     end
   })
 
@@ -36,6 +35,7 @@ end
 ---
 
 --- @class World
+--- @field should_quit boolean If true the app will close on the next iteration.
 local World = Object:extend()
 
 --- @alias Entity integer
@@ -45,14 +45,16 @@ function World:new()
   self.entities = Slab(Registry.MAX_ENTITIES)
   self.components = Array.with_capacity(Registry.MAX_COMPONENTS)
 
-  for i = 1, Registry.get_components_count() do
+  for i = 1, Registry.MAX_COMPONENTS do
     self.components[i] = Array.with_capacity(Registry.MAX_ENTITIES)
   end
+
+  self.events = Queue()
+  self.should_quit = false
 end
 
 --- @return integer
 function World:spawn(...)
-  -- local entity = self.entities:next()
   local entity_data = { components = Array() }
   entity_data.id = self.entities:insert(entity_data)
 
@@ -97,6 +99,12 @@ function World:remove_component(entity, component)
   self.components[component[1]][entity_data.id] = nil
 end
 
+--- @param event string event name
+--- @param ... any args
+function World:emit(event, ...)
+  self.events:push_right({ event, { ... } })
+end
+
 --- @param ... Component
 --- @return fun(): Entity?, ...
 function World:query(...)
@@ -108,26 +116,34 @@ function World:query(...)
     local entity = last_entity + 1
     local entity_data
     local result_len = #components
+    local has_components = true
 
     while entity < Registry.MAX_ENTITIES do
-      entity_data = self.entities:get(entity)
-      if entity_data then
+      while entity < Registry.MAX_ENTITIES do
+        entity_data = self.entities:get(entity)
+        if entity_data then
+          break
+        else
+          entity = entity + 1
+        end
+      end
+
+      if not entity_data then
+        return nil
+      end
+      last_entity = entity
+
+      for i = 1, result_len do
+        if not self.components[components[i][1]][entity] then
+          has_components = false
+          break
+        end
+      end
+
+      if has_components then
         break
       else
         entity = entity + 1
-      end
-    end
-
-    if not entity_data then
-      return nil
-    end
-    last_entity = entity
-
-    local has_components = true
-    for i = 1, result_len do
-      if not self.components[components[i][1]][entity] then
-        has_components = false
-        break
       end
     end
 
@@ -147,7 +163,7 @@ end
 --- @alias System fun(world: World)
 --- @class App
 --- @field systems System[]
---- @field qualified { once: System[], always: System[], every: System[] }
+--- @field qualified { once: System[], always: System[], every: System[], when: System[] }
 --- @field world World
 --- @overload fun(): App
 local App = Object:extend()
@@ -160,35 +176,66 @@ function App:new()
   self.qualified = {
     once = Array(),
     always = Array(),
-    every = Array()
+    every = Array(),
+    when = Array(),
   }
   self.world = World()
 end
 
 --- @param system fun(world: World)
---- @param qualifier 'once' | 'always' | 'every'
---- @param cond_or_interval (fun(world: World) | number)?
-function App:add_system(system, qualifier, cond_or_interval)
+--- @param qualifier 'once' | 'always' | 'every' | 'when'
+--- @param cond_or_interval_or_event (fun(world: World) | number | string)?
+function App:add_system(system, qualifier, cond_or_interval_or_event)
+  if qualifier == 'when' then
+    assert(cond_or_interval_or_event, 'No event specified.')
+  end
+
+  if qualifier == 'every' then
+    assert(cond_or_interval_or_event, 'No interval specified.')
+  end
+
+  assert(Array('once', 'always', 'every', 'when'):find(qualifier) ~= -1, 'Invalid qualifier ' .. qualifier)
+
   table.insert(self.systems, system)
-  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval })
+  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event })
   return self
 end
 
---- @param path string
+--- @param arg string | fun(app: App)
 --- @return App
-function App:add_plugin(path)
-  require(path)(self)
+function App:add_plugin(arg)
+  local arg_type = type(arg)
+  if arg_type == 'string' then
+    require(arg)(self)
+  elseif arg_type == 'function' then
+    arg(self)
+  end
   return self
 end
 
 function App:run()
+  local world = self.world
+  local dispatch_table = {}
+  local when = self.qualified.when
+  local when_len = #when
+
+  for i = 1, when_len do
+    local ev_func = when[i][1]
+    local ev_name = when[i][2]
+
+    if not dispatch_table[ev_name] then
+      dispatch_table[ev_name] = Array()
+    end
+    dispatch_table[ev_name]:insert(ev_func)
+  end
+
   local function execute_system(meta)
     if #meta == 2 then
-      if meta[2](self.world) then
-        meta[1](self.world)
+      if meta[2](world) then
+        meta[1](world)
       end
     else
-      meta[1](self.world)
+      meta[1](world)
     end
   end
 
@@ -200,43 +247,20 @@ function App:run()
   for i = 1, once_len do
     execute_system(rawget(once, i))
   end
-  while true do
+  while not world.should_quit do
     for i = 1, always_len do
       execute_system(rawget(always, i))
+    end
+
+    for event_data in world.events:iter() do
+      local callbacks = dispatch_table[event_data[1]]
+      if callbacks then
+        for i = 1, #callbacks do
+          callbacks[i](world, unpack(event_data[2]))
+        end
+      end
     end
   end
 end
 
 return App
-
----
-
--- local Name = Component()
-
--- --- @param world World
--- local function condition(world)
---   for entity, name in world:query(Name) do
---     -- world:query()
---   end
---   return false
--- end
-
--- --- @param world World
--- local function hello_world(world)
---   local entity = world:spawn(Name('foo'))
---   print('hello world system executed')
--- end
-
--- local function print_names(world)
---   for entity, name in world:query(Name) do
---     print(entity, name, 'jasd')
---   end
---   print('print names')
--- end
-
--- App()
--- -- :add_system(hello_world)
---     :add_system(hello_world, 'once')
---     :add_system(print_names, 'once')
--- -- :add_system(hello_world, 'once', condition)
---     :run()
