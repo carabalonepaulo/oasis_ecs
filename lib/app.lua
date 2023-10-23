@@ -2,6 +2,7 @@ local Object = require 'vendor.object'
 local Array = require 'lib.array'
 local Slab = require 'lib.slab'
 local Queue = require 'lib.queue'
+local printf = function(...) print(string.format(...)) end
 
 ---
 
@@ -10,7 +11,7 @@ local uid = 0
 
 Registry.RESERVED_WORDS = Array('entity', 'world', 'registry')
 Registry.MAX_COMPONENTS = 1024
-Registry.MAX_ENTITIES = 100000
+Registry.MAX_ENTITIES = 50000
 
 function Registry.get_components_count()
   return uid
@@ -161,6 +162,8 @@ end
 ---
 
 --- @alias System fun(world: World)
+--- @alias Condition fun(world: World): boolean
+
 --- @class App
 --- @field systems System[]
 --- @field qualified { once: System[], always: System[], every: System[], when: System[] }
@@ -182,23 +185,35 @@ function App:new()
   self.world = World()
 end
 
---- @param system fun(world: World)
---- @param qualifier 'once' | 'always' | 'every' | 'when'
---- @param cond_or_interval_or_event ((fun(world: World): boolean) | number | string)?
---- @param ... (fun(world: World): boolean)?
-function App:add_system(system, qualifier, cond_or_interval_or_event, ...)
-  if qualifier == 'when' then
-    assert(cond_or_interval_or_event, 'No event specified.')
-  elseif qualifier == 'every' then
-    assert(cond_or_interval_or_event, 'No interval specified.')
-    -- else -- once, always
-    --   cond_or_nil = cond_or_interval_or_event
+--- @alias SystemQualifier 'once' | 'always' | 'every' | 'when'
+---
+--- @overload fun(self: App, system: System, qualifier: 'once', ...: Condition?)
+--- @overload fun(self: App, system: System, qualifier: 'always', ...: Condition?)
+--- @overload fun(self: App, system: System, qualifier: 'every', interval: number, ...: Condition?)
+--- @overload fun(self: App, system: System, qualifier: 'when', event: string, ...: Condition?)
+function App:add_system(system, qualifier, ...)
+  qualifier = qualifier or 'always'
+
+  local cond_list = { ... }
+  local cond_list_len = #cond_list
+  local second_arg = nil
+  local assert_first_item = function(type_name, error_message)
+    assert(cond_list_len >= 1 and type(cond_list[1]) == type_name, error_message)
   end
 
-  assert(Array('once', 'always', 'every', 'when'):find(qualifier) ~= -1, 'Invalid qualifier ' .. qualifier)
+  if qualifier == 'every' then
+    assert_first_item('number', 'Invalid interval.')
+    second_arg = table.remove(cond_list, 1)
+  elseif qualifier == 'when' then
+    assert_first_item('string', 'Invalid event.')
+    second_arg = table.remove(cond_list, 1)
+  end
 
+  assert(Array('once', 'always', 'every', 'when'):find(qualifier) ~= -1,
+    'Invalid qualifier ' .. qualifier)
   table.insert(self.systems, system)
-  self.qualified[qualifier or 'always']:insert({ system, cond_or_interval_or_event, { ... } })
+  self.qualified[qualifier]:insert({ system, second_arg, cond_list })
+
   return self
 end
 
