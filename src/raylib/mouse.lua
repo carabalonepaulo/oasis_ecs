@@ -1,0 +1,9 @@
+return {
+  BUTTON_LEFT = 0,
+  BUTTON_RIGHT = 1,
+  BUTTON_MIDDLE = 2,
+  BUTTON_SIDE = 3,
+  BUTTON_EXTRA = 4,
+  BUTTON_FORWARD = 5,
+  BUTTON_BACK = 6,
+}
