@@ -21,6 +21,8 @@ end
 
 --- @param app App
 return function(app)
+  rl.SetTraceLogLevel(7)
+
   local size = settings.window.size
   local title = settings.window.title
   rl.InitWindow(size[1], size[2], title)

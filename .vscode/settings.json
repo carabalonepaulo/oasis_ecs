@@ -1,3 +1,6 @@
 {
-  "Lua.runtime.version": "LuaJIT"
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.workspace.library": [
+    "./ext"
+  ]
 }

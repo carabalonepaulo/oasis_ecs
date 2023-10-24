@@ -1,3 +1,8 @@
+require 'ext.math'
+require 'ext.os'
+require 'ext.string'
+require 'ext.table'
+
 local Object = require 'vendor.object'
 local Array = require 'lib.array'
 local Slab = require 'lib.slab'
