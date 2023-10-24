@@ -16,7 +16,7 @@ local uid = 0
 
 Registry.RESERVED_WORDS = Array('entity', 'world', 'registry')
 Registry.MAX_COMPONENTS = 1024
-Registry.MAX_ENTITIES = 1024
+Registry.MAX_ENTITIES = 30000
 
 function Registry.get_components_count()
   return uid
@@ -191,6 +191,9 @@ end
 local App = Object:extend()
 
 App.create_component = Registry.create_component
+
+App.MAX_COMPONENTS = Registry.MAX_COMPONENTS
+App.MAX_ENTITIES = Registry.MAX_ENTITIES
 
 --- @private
 function App:new()
