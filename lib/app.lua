@@ -119,7 +119,7 @@ function World:query(...)
     local result_len = #components
     local has_components = true
 
-    while entity < Registry.MAX_ENTITIES do
+    while true do
       while entity < Registry.MAX_ENTITIES do
         entity_data = self.entities:get(entity)
         if entity_data then
