@@ -1,7 +1,7 @@
 local ffi = require 'ffi'
 
 do
-  local file = io.open('./src/raylib/no_macro_raylib.h', 'r')
+  local file = io.open('./lib/raylib/no_macro_raylib.h', 'r')
   if file then
     ffi.cdef(file:read('*a'))
     file:close()
@@ -10,13 +10,13 @@ end
 
 local rl = ffi.load('./bin/raylib.dll')
 local rand = rl.GetRandomValue
-local keys = require 'src.raylib.keys'
-local mouse = require 'src.raylib.mouse'
+local keys = require 'lib.raylib.keys'
+local mouse = require 'lib.raylib.mouse'
 
 local create_component = require('lib.app').create_component
 
 local SCREEN_SIZE = { 800, 600 }
-local MAX_BUNNIES = 50000
+local MAX_BUNNIES = require('lib.app').MAX_ENTITIES
 local WHITE = { 255, 255, 255, 255 }
 local BLACK = { 0, 0, 0, 0 }
 
@@ -27,6 +27,14 @@ local bunny = create_component()
 local position = create_component()
 local speed = create_component()
 local color = create_component()
+
+local is_mouse_button_down = rl.IsMouseButtonDown
+local begin_drawing = rl.BeginDrawing
+local end_drawing = rl.EndDrawing
+local clear = rl.ClearBackground
+local draw_texture = rl.DrawTexture
+local draw_text = rl.DrawText
+local draw_fps = rl.DrawFPS
 
 --- @param world World
 local function setup(world)
@@ -44,12 +52,15 @@ local function should_quit(world)
 end
 
 local function should_spawn()
-  return rl.IsMouseButtonDown(mouse.BUTTON_LEFT) and bunnies_count < MAX_BUNNIES
+  return is_mouse_button_down(mouse.BUTTON_LEFT) and bunnies_count < MAX_BUNNIES
 end
 
 --- @param world World
 local function spawn_bunnies(world)
-  for i = 1, 1000 do
+  for i = 1, 50000 do
+    if not should_spawn() then
+      return
+    end
     local mouse_pos = rl.GetMousePosition()
     local pos       = position { mouse_pos.x, mouse_pos.y }
     local speed     = speed { rand(-250, 250) / 60, rand(-250, 250) / 60 }
@@ -73,12 +84,7 @@ local function move(world)
   end
 end
 
-local begin_drawing = rl.BeginDrawing
-local end_drawing = rl.EndDrawing
-local clear = rl.ClearBackground
-local draw_texture = rl.DrawTexture
-local draw_text = rl.DrawText
-local draw_fps = rl.DrawFPS
+
 
 --- @param world World
 local function draw(world)
