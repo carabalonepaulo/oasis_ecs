@@ -105,10 +105,24 @@ function World:remove_component(entity, component)
   self.components[component[1]][entity_data.id] = nil
 end
 
+--- @overload fun(self: World, event: string, ...: any)
+--- @param group string event group
 --- @param event string event name
 --- @param ... any args
-function World:emit(event, ...)
-  self.events:push_right({ event, { ... } })
+function World:emit(group, event, ...)
+  local temp, args
+
+  -- world:emit('group', 'event')
+  if event ~= nil then
+    args = { ... }
+  else -- world:emit('event')
+    temp = event
+    event = group
+    group = '__default'
+    args = { temp, ... }
+  end
+
+  self.events:push_right({ group, event, args })
 end
 
 --- @param ... Component
@@ -242,13 +256,31 @@ function App:run()
 
   for i = 1, when_len do
     local ev_func = when[i][1]
-    local ev_name = when[i][2]
+    local ev_name, ev_group
     local cond = when[i][3]
 
-    if not dispatch_table[ev_name] then
-      dispatch_table[ev_name] = Array()
+    local parts = when[i][2]:split('%.')
+    local parts_len = #parts
+
+    if parts_len == 1 then
+      ev_group = '__default'
+      ev_name = when[i][2]
+    elseif parts_len == 2 then
+      ev_group = parts[1]
+      ev_name = parts[2]
+    else
+      error(string.format('Invalid event identifier: "%s"!', when[i][2]))
     end
-    dispatch_table[ev_name]:insert({ ev_func, cond })
+
+    if not dispatch_table[ev_group] then
+      dispatch_table[ev_group] = {}
+    end
+
+    if not dispatch_table[ev_group][ev_name] then
+      dispatch_table[ev_group][ev_name] = Array()
+    end
+
+    dispatch_table[ev_group][ev_name]:insert({ ev_func, cond })
   end
 
   local function execute_system(system, cond_list, ...)
@@ -288,10 +320,10 @@ function App:run()
     end
 
     for event_data in world.events:iter() do
-      local callbacks = dispatch_table[event_data[1]]
+      local callbacks = dispatch_table[event_data[1]][event_data[2]]
       if callbacks then
         for i = 1, #callbacks do
-          execute_system(callbacks[i][1], callbacks[i][2], unpack(event_data[2]))
+          execute_system(callbacks[i][1], callbacks[i][2], unpack(event_data[3]))
         end
       end
     end
