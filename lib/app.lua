@@ -11,7 +11,7 @@ local uid = 0
 
 Registry.RESERVED_WORDS = Array('entity', 'world', 'registry')
 Registry.MAX_COMPONENTS = 1024
-Registry.MAX_ENTITIES = 50000
+Registry.MAX_ENTITIES = 1024
 
 function Registry.get_components_count()
   return uid
