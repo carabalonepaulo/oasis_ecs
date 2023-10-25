@@ -84,8 +84,6 @@ local function move(world)
   end
 end
 
-
-
 --- @param world World
 local function draw(world)
   begin_drawing()
