@@ -1,4 +1,3 @@
----@diagnostic disable: param-type-mismatch
 local crc32 = require 'vendor.crc32'
 local Array = require 'lib.array'
 
@@ -37,6 +36,10 @@ function string.split(text, sep, allow_empty)
   return parts
 end
 
+--- @param self string
+--- @param pos integer
+--- @param value string
+--- @return string
 function string.insert(self, pos, value)
   if not value then
     return self .. pos
@@ -45,49 +48,77 @@ function string.insert(self, pos, value)
   return self:sub(1, pos) .. value .. self:sub(pos + 1, self:len())
 end
 
-function string.remove_slice(self, begin_pos, end_pos)
+--- @param self string
+--- @param begin_pos integer
+--- @param end_pos integer
+--- @return string
+function string.slice(self, begin_pos, end_pos)
   return self:sub(1, begin_pos - 1) .. self:sub(end_pos, self:len())
 end
 
+--- @param self string
+--- @return string
 function string.capitalize(self)
   return (self:gsub("^%l", string.upper))
 end
 
+--- @param self string
+--- @return string
 function string.beautify(self)
   return (#self <= 2 and self:upper() or self:capitalize())
 end
 
+--- @param self string
+--- @return string
 function string.sneak_case_to_pascal_case(self)
   return self:split('_')
       :map(string.beautify)
       :concat()
 end
 
+--- @param self string
+--- @param str string
+--- @return boolean
 function string.starts_with(self, str)
   return self:sub(1, #str) == str
 end
 
+--- @param self string
+--- @param str string
+--- @return boolean
 function string.ends_with(self, str)
   local i = #self - #str
   return self:sub(i + 1, i + #str) == str
 end
 
+--- @param self string
+--- @return integer
 function string.hash(self)
   return crc32(self)
 end
 
+--- @param self string
+--- @param prefix string
+--- @return string
 function string.trim_prefix(self, prefix)
   return (self:gsub('^' .. prefix, ''))
 end
 
+--- @param self string
+--- @param sufix string
+--- @return string
 function string.trim_sufix(self, sufix)
   return (self:gsub(sufix .. '$', ''))
 end
 
+--- @param self string
+--- @return string
 function string.get_file_name(self)
   return self:sub(1, self:find('%.') - 1)
 end
 
+--- @param self string
+--- @return string
 function string.get_file_extension(self)
   return self:sub(self:find('%.') + 1, #self)
 end
