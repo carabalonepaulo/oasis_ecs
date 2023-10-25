@@ -1,5 +1,5 @@
 local rl = require 'lib.raylib'
-local settings = require 'src.settings'
+local settings = require 'settings'
 
 --- @param world World
 local function poll(world)

@@ -23,15 +23,16 @@ function Registry.get_components_count()
 end
 
 --- @alias Component fun(...): { [1]: integer, [2]: any } | { [1]: integer }
+--- @param scheme (table | string)?
 --- @return Component
-function Registry.create_component()
+function Registry.create_component(scheme)
   uid = uid + 1
   local component_id = uid
 
   --- @overload fun(...): { [1]: integer, [2]: any }
   local ctor = setmetatable({ component_id }, {
     __call = function(_, value)
-      return { component_id, value or 1 }
+      return { component_id, value }
     end
   })
 
@@ -70,7 +71,7 @@ function World:spawn(...)
   for _, meta in ipairs(components) do
     entity_data.components:insert(meta[1])
     -- printf('component %d added to entity %d with value `%s`', meta[1], entity_data.id, tostring(meta[2]))
-    self.components[meta[1]][entity_data.id] = meta[2]
+    self.components[meta[1]][entity_data.id] = meta[2] or true
   end
 
   return entity_data.id
@@ -176,6 +177,12 @@ function World:query(...)
 
     return nil
   end
+end
+
+--- @param ... Component
+--- @return Entity?, ...
+function World:query_first(...)
+  return self:query(...)()
 end
 
 ---

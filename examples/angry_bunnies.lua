@@ -2,9 +2,9 @@ local App = require 'lib.app'
 local import = require 'lib.import'
 local create_component = App.create_component
 
-local asset_server = require 'src.core.asset_server'
+local asset_server = require 'lib.core.asset_server'
 
-local conditions = require('src.core.conditions')
+local conditions = require('lib.core.conditions')
 local component_exists = conditions.component_exists
 
 local rl = require 'lib.raylib'
@@ -27,7 +27,7 @@ local controller = create_component()
 local speed = create_component()
 
 local texture, position, scale, color = import('texture', 'position', 'scale', 'color')
-    .from('src.core.components')
+    .from('lib.core.components')
 
 --- @param world World
 local function spawn(world)
