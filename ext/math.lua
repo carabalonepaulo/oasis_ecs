@@ -1,3 +1,7 @@
+--- @param value number
+--- @param min number
+--- @param max number
+--- @return number
 function math.clamp(value, min, max)
   if value < min then
     return min
@@ -7,6 +11,8 @@ function math.clamp(value, min, max)
   return value
 end
 
+--- @param value number
+--- @return number
 function math.round(value)
   if value <= 2.49 then
     return math.floor(value)
@@ -22,6 +28,10 @@ function math.randomize()
   math.random()
 end
 
+--- @param a number initial value
+--- @param b number final value
+--- @param t number time
+--- @return number
 function math.lerp(a, b, t)
   return a * (1.0 - t) + (b * t)
 end
