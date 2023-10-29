@@ -5,12 +5,7 @@ local settings = require 'settings'
 local function poll(world)
   if rl.WindowShouldClose() then
     world:emit('quit')
-    return
   end
-
-  rl.BeginDrawing()
-  rl.ClearBackground({ 0, 0, 0 })
-  rl.EndDrawing()
 end
 
 --- @param world World
