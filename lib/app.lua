@@ -15,8 +15,8 @@ local Registry = {}
 local uid = 0
 
 Registry.RESERVED_WORDS = Array('entity', 'world', 'registry')
-Registry.MAX_COMPONENTS = 1024
-Registry.MAX_ENTITIES = 30000
+Registry.MAX_COMPONENTS = 256
+Registry.MAX_ENTITIES = 32768
 
 function Registry.get_components_count()
   return uid
@@ -107,10 +107,10 @@ function World:remove_component(entity, component)
 end
 
 --- @overload fun(self: World, event: string, ...: any)
---- @param group string event group
+--- @param domain string event domain
 --- @param event string event name
 --- @param ... any args
-function World:emit(group, event, ...)
+function World:emit(domain, event, ...)
   local temp, args
 
   -- world:emit('group', 'event')
@@ -118,12 +118,12 @@ function World:emit(group, event, ...)
     args = { ... }
   else -- world:emit('event')
     temp = event
-    event = group
-    group = '__default'
+    event = domain
+    domain = '__default'
     args = { temp, ... }
   end
 
-  self.events:push_right({ group, event, args })
+  self.events:push_right({ domain, event, args })
 end
 
 --- @param ... Component
@@ -194,6 +194,7 @@ end
 --- @field systems System[]
 --- @field qualified { once: System[], always: System[], every: System[], when: System[] }
 --- @field world World
+--- @field private _known_domains Array
 --- @overload fun(): App
 local App = Object:extend()
 
@@ -212,6 +213,8 @@ function App:new()
     when = Array(),
   }
   self.world = World()
+
+  self._known_domains = Array()
 end
 
 --- @alias SystemQualifier 'once' | 'always' | 'every' | 'when'
@@ -258,11 +261,22 @@ function App:add_plugin(arg)
   return self
 end
 
+--- @param domain_name string
+--- @return App
+function App:add_event_domain(domain_name)
+  self._known_domains:insert(domain_name)
+  return self
+end
+
 function App:run()
   local world = self.world
   local dispatch_table = {}
   local when = self.qualified.when
   local when_len = #when
+
+  self._known_domains:each(function(domain_name)
+    dispatch_table[domain_name] = {}
+  end)
 
   for i = 1, when_len do
     local ev_func = when[i][1]
