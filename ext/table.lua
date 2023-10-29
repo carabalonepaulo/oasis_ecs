@@ -1,3 +1,6 @@
+--- @param self table
+--- @param depth integer?
+--- @return table
 function table.clone(self, depth)
   depth = depth or 0
   local result = {}
