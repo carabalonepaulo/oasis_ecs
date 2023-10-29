@@ -1,4 +1,5 @@
----@diagnostic disable: param-type-mismatch, need-check-nil, redundant-parameter
+---@diagnostic disable: param-type-mismatch, need-check-nil, redundant-parameter, cast-local-type
+
 --[[
 Copyright (c) 2020, Jasmijn Wellner
 
@@ -192,10 +193,10 @@ local function write_table(value, seen)
   local classkey
   local metatable = getmetatable(value)
   local classname = (class_name_registry[value.class] -- MiddleClass
-      or class_name_registry[value.__baseclass] -- SECL
-      or class_name_registry[metatable] -- hump.class
-      or class_name_registry[value.__class__] -- Slither
-      or class_name_registry[value.__class]) -- Moonscript class
+    or class_name_registry[value.__baseclass]         -- SECL
+    or class_name_registry[metatable]                 -- hump.class
+    or class_name_registry[value.__class__]           -- Slither
+    or class_name_registry[value.__class])            -- Moonscript class
   if classname then
     classkey = classkey_registry[classname]
     Buffer_write_byte(242)
@@ -244,8 +245,14 @@ local function write_cdata(value, seen)
   Buffer_write_raw(ffi.typeof('$[1]', ty)(value), len)
 end
 
-local types = { number = write_number, string = write_string, table = write_table, boolean = write_boolean,
-  ["nil"] = write_nil, cdata = write_cdata }
+local types = {
+  number = write_number,
+  string = write_string,
+  table = write_table,
+  boolean = write_boolean,
+  ["nil"] = write_nil,
+  cdata = write_cdata
+}
 
 serialize_value = function(value, seen)
   if seen[value] then
@@ -279,8 +286,8 @@ serialize_value = function(value, seen)
     return
   end
   (types[t] or
-      error("cannot serialize type " .. t)
-      )(value, seen)
+    error("cannot serialize type " .. t)
+  )(value, seen)
 end
 
 local function serialize(value)
@@ -413,86 +420,100 @@ local function deserialize_Moonscript(instance, class)
   return setmetatable(instance, class.__base)
 end
 
-return { dumps = function(value)
-  serialize(value)
-  return ffi.string(buf, buf_pos)
-end, dumpLoveFile = function(fname, value)
-  serialize(value)
-  assert(love.filesystem.write(fname, ffi.string(buf, buf_pos)))
-end, loadLoveFile = function(fname)
-  local serializedData, error = love.filesystem.newFileData(fname)
-  assert(serializedData, error)
-  Buffer_newDataReader(serializedData:getPointer(), serializedData:getSize())
-  local value = deserialize_value({})
-  -- serializedData needs to not be collected early in a tail-call
-  -- so make sure deserialize_value returns before loadLoveFile does
-  return value
-end, loadData = function(data, size)
-  if size == 0 then
-    error('cannot load value from empty data')
-  end
-  Buffer_newDataReader(data, size)
-  return deserialize_value({})
-end, loads = function(str)
-  if #str == 0 then
-    error('cannot load value from empty string')
-  end
-  Buffer_newReader(str)
-  return deserialize_value({})
-end, includeMetatables = function(bool)
-  includeMetatables = not not bool
-end, register = function(name, resource)
-  assert(not resource_registry[name], name .. " already registered")
-  resource_registry[name] = resource
-  resource_name_registry[resource] = name
-  return resource
-end, unregister = function(name)
-  resource_name_registry[resource_registry[name]] = nil
-  resource_registry[name] = nil
-end, registerClass = function(name, class, classkey, deserializer)
-  if not class then
-    class = name
-    name = class.__name__ or class.name or class.__name
-  end
-  if not classkey then
-    if class.__instanceDict then
-      -- assume MiddleClass
-      classkey = 'class'
-    elseif class.__baseclass then
-      -- assume SECL
-      classkey = '__baseclass'
+return {
+  dumps = function(value)
+    serialize(value)
+    return ffi.string(buf, buf_pos)
+  end,
+  -- dumpLoveFile = function(fname, value)
+  --   serialize(value)
+  --   assert(love.filesystem.write(fname, ffi.string(buf, buf_pos)))
+  -- end,
+  -- loadLoveFile = function(fname)
+  --   local serializedData, error = love.filesystem.newFileData(fname)
+  --   assert(serializedData, error)
+  --   Buffer_newDataReader(serializedData:getPointer(), serializedData:getSize())
+  --   local value = deserialize_value({})
+  --   -- serializedData needs to not be collected early in a tail-call
+  --   -- so make sure deserialize_value returns before loadLoveFile does
+  --   return value
+  -- end,
+  loadData = function(data, size)
+    if size == 0 then
+      error('cannot load value from empty data')
     end
-    -- assume hump.class, Slither, Moonscript class or something else that doesn't store the
-    -- class directly on the instance
-  end
-  if not deserializer then
-    if class.__instanceDict then
-      -- assume MiddleClass
-      deserializer = deserialize_MiddleClass
-    elseif class.__baseclass then
-      -- assume SECL
-      deserializer = deserialize_SECL
-    elseif class.__index == class then
-      -- assume hump.class
-      deserializer = deserialize_humpclass
-    elseif class.__name__ then
-      -- assume Slither
-      deserializer = deserialize_Slither
-    elseif class.__base then
-      -- assume Moonscript class
-      deserializer = deserialize_Moonscript
-    else
-      error("no deserializer given for unsupported class library")
+    Buffer_newDataReader(data, size)
+    return deserialize_value({})
+  end,
+  loads = function(str)
+    if #str == 0 then
+      error('cannot load value from empty string')
     end
-  end
-  class_registry[name] = class
-  classkey_registry[name] = classkey
-  class_deserialize_registry[name] = deserializer
-  class_name_registry[class] = name
-  return class
-end, unregisterClass = function(name)
-  class_name_registry[class_registry[name]] = nil
-  classkey_registry[name] = nil
-  class_deserialize_registry[name] = nil
-  class_registry[name] = nil
-end, reserveBuffer = Buffer_prereserve, clearBuffer = Buffer_clear, version = VERSION }
+    Buffer_newReader(str)
+    return deserialize_value({})
+  end,
+  includeMetatables = function(bool)
+    includeMetatables = not not bool
+  end,
+  register = function(name, resource)
+    assert(not resource_registry[name], name .. " already registered")
+    resource_registry[name] = resource
+    resource_name_registry[resource] = name
+    return resource
+  end,
+  unregister = function(name)
+    resource_name_registry[resource_registry[name]] = nil
+    resource_registry[name] = nil
+  end,
+  registerClass = function(name, class, classkey, deserializer)
+    if not class then
+      class = name
+      name = class.__name__ or class.name or class.__name
+    end
+    if not classkey then
+      if class.__instanceDict then
+        -- assume MiddleClass
+        classkey = 'class'
+      elseif class.__baseclass then
+        -- assume SECL
+        classkey = '__baseclass'
+      end
+      -- assume hump.class, Slither, Moonscript class or something else that doesn't store the
+      -- class directly on the instance
+    end
+    if not deserializer then
+      if class.__instanceDict then
+        -- assume MiddleClass
+        deserializer = deserialize_MiddleClass
+      elseif class.__baseclass then
+        -- assume SECL
+        deserializer = deserialize_SECL
+      elseif class.__index == class then
+        -- assume hump.class
+        deserializer = deserialize_humpclass
+      elseif class.__name__ then
+        -- assume Slither
+        deserializer = deserialize_Slither
+      elseif class.__base then
+        -- assume Moonscript class
+        deserializer = deserialize_Moonscript
+      else
+        error("no deserializer given for unsupported class library")
+      end
+    end
+    class_registry[name] = class
+    classkey_registry[name] = classkey
+    class_deserialize_registry[name] = deserializer
+    class_name_registry[class] = name
+    return class
+  end,
+  unregisterClass = function(name)
+    class_name_registry[class_registry[name]] = nil
+    classkey_registry[name] = nil
+    class_deserialize_registry[name] = nil
+    class_registry[name] = nil
+  end,
+  reserveBuffer = Buffer_prereserve,
+  clearBuffer = Buffer_clear,
+  version = VERSION
+}
