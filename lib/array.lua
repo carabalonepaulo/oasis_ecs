@@ -1,3 +1,5 @@
+require 'table.new'
+
 local MAX_NUMBER = 2 ^ 52
 
 --- @class Array<T>
