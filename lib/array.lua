@@ -13,14 +13,8 @@ local Array = setmetatable({}, {
 --- @param n integer
 --- @return Array<T>
 function Array.with_capacity(n)
-  local array = Array()
-  for i = 1, n do
-    array:insert(i)
-  end
-  for i = 1, n do
-    array[i] = nil
-  end
-  return array
+  ---@diagnostic disable-next-line: undefined-field
+  return table.new(n, 0)
 end
 
 --- @generic T
