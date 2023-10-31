@@ -74,7 +74,14 @@ end
 function App:add_plugin(arg)
   local arg_type = type(arg)
   if arg_type == 'string' then
-    require(arg)(self)
+    local result = require(arg)
+    local result_type = type(result)
+
+    if result_type == 'function' then
+      result(self)
+    elseif result_type == 'table' and result.plugin and type(result.plugin) == 'function' then
+      result.plugin(self)
+    end
   elseif arg_type == 'function' then
     arg(self)
   end
