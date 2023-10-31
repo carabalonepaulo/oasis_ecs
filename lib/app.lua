@@ -8,7 +8,6 @@ local Array = require 'lib.array'
 local main = require 'lib.main'
 
 local Registry = require 'lib.registry'
-local World = require 'lib.world'
 
 --- @alias System fun(world: World)
 --- @alias Condition fun(world: World): boolean
@@ -23,7 +22,6 @@ local App = Object:extend()
 
 App.create_component = Registry.create_component
 
-App.MAX_COMPONENTS = Registry.MAX_COMPONENTS
 App.MAX_ENTITIES = Registry.MAX_ENTITIES
 
 --- @private
@@ -35,7 +33,6 @@ function App:new()
     every = Array(),
     when = Array(),
   }
-  self.world = World()
 
   self._known_domains = Array()
 end
@@ -92,7 +89,7 @@ function App:add_event_domain(domain_name)
 end
 
 function App:run()
-  main(self.world, self.qualified, self._known_domains)
+  main(self.qualified, self._known_domains)
 end
 
 return App

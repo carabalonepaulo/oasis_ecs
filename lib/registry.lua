@@ -4,7 +4,6 @@ local Registry = {}
 local uid = 0
 
 Registry.RESERVED_WORDS = Array('entity', 'world', 'registry')
-Registry.MAX_COMPONENTS = 256
 Registry.MAX_ENTITIES = 32768
 
 function Registry.get_components_count()

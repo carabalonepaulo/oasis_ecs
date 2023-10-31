@@ -1,4 +1,5 @@
 local Array = require 'lib.array'
+local World = require 'lib.world'
 
 local function create_dispatch_table(known_domains, when)
   local dispatch_table = {}
@@ -58,7 +59,8 @@ local function execute_system(world, system, cond_list, ...)
   end
 end
 
-return function(world, qualified, known_domains)
+return function(qualified, known_domains)
+  local world = World()
   local dispatch_table = create_dispatch_table(known_domains, qualified.when)
 
   local once = qualified.once

@@ -12,10 +12,12 @@ local World = Object:extend()
 
 --- @private
 function World:new()
-  self.entities = Slab(Registry.MAX_ENTITIES)
-  self.components = Array.with_capacity(Registry.MAX_COMPONENTS)
+  local components_count = Registry.get_components_count()
 
-  for i = 1, Registry.MAX_COMPONENTS do
+  self.entities = Slab(Registry.MAX_ENTITIES)
+  self.components = Array.with_capacity(components_count)
+
+  for i = 1, components_count do
     self.components[i] = Array.with_capacity(Registry.MAX_ENTITIES)
   end
 
