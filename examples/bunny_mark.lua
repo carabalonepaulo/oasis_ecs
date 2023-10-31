@@ -2,7 +2,6 @@ local import = require 'lib.import'
 local asset_server = require 'lib.core.asset_server'
 
 local rl = require 'lib.raylib'
-local keys = require 'lib.raylib.keys'
 local mouse = require 'lib.raylib.mouse'
 
 local rand = rl.GetRandomValue
@@ -10,8 +9,7 @@ local is_mouse_button_down = rl.IsMouseButtonDown
 local get_frame_time = rl.GetFrameTime
 
 local SCREEN_SIZE = { 800, 600 }
-local MAX_BUNNIES = require('lib.app').MAX_ENTITIES - 1
-local WHITE = { 255, 255, 255, 255 }
+local MAX_BUNNIES = require('lib.app').MAX_ENTITIES
 
 local create_component = require('lib.app').create_component
 
@@ -37,14 +35,14 @@ end
 --- @param world World
 local function spawn(world)
   local mouse_pos = rl.GetMousePosition()
-  for i = 1, 1000 do
+  for _ = 1, 1000 do
     if not should_spawn() then
       return
     end
 
     world:spawn(
       bunny,
-      position { mouse_pos.x + 1, mouse_pos.y + 1 },
+      position { mouse_pos.x, mouse_pos.y },
       scale { 1, 1 },
       color { rand(50, 250), rand(50, 240), rand(50, 240), 255 },
       texture(bunny_texture),
