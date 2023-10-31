@@ -1,5 +1,5 @@
 local crc32 = require 'vendor.crc32'
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 
 --- @param text string
 --- @param sep string

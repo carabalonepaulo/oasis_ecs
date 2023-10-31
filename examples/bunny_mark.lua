@@ -1,4 +1,4 @@
-local import = require 'lib.import'
+local import = require 'lib.utils.import'
 local asset_server = require 'lib.core.asset_server'
 
 local rl = require 'lib.raylib'

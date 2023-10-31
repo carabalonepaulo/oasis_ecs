@@ -1,7 +1,7 @@
 local Object = require 'vendor.object'
-local Array = require 'lib.array'
-local Slab = require 'lib.slab'
-local Queue = require 'lib.queue'
+local Array = require 'lib.collections.array'
+local Slab = require 'lib.collections.slab'
+local Queue = require 'lib.collections.queue'
 local Registry = require 'lib.registry'
 
 --- @class World

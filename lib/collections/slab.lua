@@ -1,4 +1,4 @@
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 
 return function(capacity)
   capacity = capacity or 1024

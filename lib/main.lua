@@ -1,5 +1,6 @@
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 local World = require 'lib.world'
+local errorf = require 'lib.utils.errorf'
 
 local function create_dispatch_table(known_domains, when)
   local dispatch_table = {}
@@ -28,7 +29,7 @@ local function create_dispatch_table(known_domains, when)
     end
 
     if not dispatch_table[ev_group] then
-      dispatch_table[ev_group] = {}
+      errorf('Unknown event domain "%s"!', ev_group)
     end
 
     if not dispatch_table[ev_group][ev_name] then

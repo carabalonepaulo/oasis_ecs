@@ -1,5 +1,5 @@
-local Slab = require 'lib.slab'
-local Queue = require 'lib.queue'
+local Slab = require 'lib.collections.slab'
+local Queue = require 'lib.collections.queue'
 
 local textures = Slab(1024)
 local handlers = {}

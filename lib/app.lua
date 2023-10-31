@@ -4,7 +4,7 @@ require 'ext.string'
 require 'ext.table'
 
 local Object = require 'vendor.object'
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 local main = require 'lib.main'
 
 local Registry = require 'lib.registry'
@@ -34,7 +34,7 @@ function App:new()
     when = Array(),
   }
 
-  self._known_domains = Array()
+  self._known_domains = Array('__default')
 end
 
 --- @alias SystemQualifier 'once' | 'always' | 'every' | 'when'

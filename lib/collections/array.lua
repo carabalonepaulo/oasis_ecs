@@ -7,7 +7,7 @@ local Array = setmetatable({}, {
   __call = function(self, ...)
     local args = { ... }
     local t = #args == 1 and args[1] or args
-    return setmetatable((type(t) == 'table' and t or {}), { __index = self })
+    return setmetatable((type(t) == 'table' and t or { t }), { __index = self })
   end
 })
 

@@ -1,10 +1,10 @@
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 local App = require 'lib.app'
 
 local asset_server = require 'lib.core.asset_server'
 local steps = require 'lib.core.renderer.steps'
 
-local import = require 'lib.import'
+local import = require 'lib.utils.import'
 local texture, position, scale, color = import('texture', 'position', 'scale', 'color')
     .from('lib.core.components')
 

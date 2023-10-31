@@ -1,5 +1,5 @@
 local App = require 'lib.app'
-local import = require 'lib.import'
+local import = require 'lib.utils.import'
 local create_component = App.create_component
 
 local asset_server = require 'lib.core.asset_server'

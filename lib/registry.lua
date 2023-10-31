@@ -1,4 +1,4 @@
-local Array = require 'lib.array'
+local Array = require 'lib.collections.array'
 
 local Registry = {}
 local uid = 0

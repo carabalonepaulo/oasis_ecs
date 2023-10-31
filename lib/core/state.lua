@@ -20,6 +20,7 @@ end
 --- @param app App
 return function(app)
   app
+      :add_event_domain('state')
       :add_system(setup, 'once')
       :add_system(change_state, 'when', 'state.change')
 end
