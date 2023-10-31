@@ -1,9 +1,9 @@
 return {
   --- @param component Component
+  --- @return Condition
   component_exists = function(component)
-    --- @param world World
     return function(world)
-      return world:query(component)
+      return world:query(component)() ~= nil
     end
   end
 }
