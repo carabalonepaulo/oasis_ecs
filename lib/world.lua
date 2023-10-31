@@ -3,6 +3,7 @@ local Array = require 'lib.collections.array'
 local Slab = require 'lib.collections.slab'
 local Queue = require 'lib.collections.queue'
 local Registry = require 'lib.registry'
+local logger = require 'lib.logger'
 
 --- @class World
 --- @field should_quit boolean If true the app will close on the next iteration.
@@ -30,12 +31,12 @@ function World:spawn(...)
   local entity_data = { components = Array() }
   entity_data.id = self.entities:insert(entity_data)
 
-  -- printf('entity %d spawned', entity_data.id)
+  -- logger.info('Entity %d spawned!', entity_data.id)
 
   local components = { ... }
   for _, meta in ipairs(components) do
     entity_data.components:insert(meta[1])
-    -- printf('component %d added to entity %d with value `%s`', meta[1], entity_data.id, tostring(meta[2]))
+    -- logger.info('Component %d added to entity %d with value `%s`.', meta[1], entity_data.id, tostring(meta[2]))
     self.components[meta[1]][entity_data.id] = meta[2] or true
   end
 
@@ -57,17 +58,13 @@ function World:add_component(entity, component)
 
   if Array.find(entity_data.components, component_id) == -1 then
     entity_data.components:insert(component_id)
-    -- self.components[component_id][entity_data.id] = component_value
-    -- else
   end
   self.components[component_id][entity_data.id] = component_value
 end
 
 function World:remove_component(entity, component)
-  -- self.components[component[1]][entity] = nil
   local entity_data = self.entities:get(entity)
 
-  -- assert(Array.find(entity_data.components, component_id) ~= -1)
   self.components[component[1]][entity_data.id] = nil
 end
 
